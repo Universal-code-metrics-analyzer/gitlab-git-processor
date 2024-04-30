@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 pydantic = "^2.7.0"
-core = { git = "https://github.com/Universal-code-metrics-analyzer/core.git", rev = "948cba9835ed8e4aa4cf88d1fc6bc84f5bf27c35" }
+core = {git = "https://github.com/Universal-code-metrics-analyzer/core.git", rev = "dev"}
 aiohttp = "^3.9.5"
 aiofiles = "^23.2.1"
 
