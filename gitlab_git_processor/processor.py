@@ -16,8 +16,8 @@ from pydantic import AnyHttpUrl
 
 class GitLabGitProcessorConfigShape(GitProcessorConfigShape):
     api_host: AnyHttpUrl
-    api_token: str
     project_id: int
+    api_token: str | None = None
 
 
 class GitLabGitProcessor(
@@ -31,11 +31,11 @@ class GitLabGitProcessor(
         return str(path).removeprefix(str(self.TEMP_PATH)).removeprefix('/')
 
     async def get_root_tree(self) -> Path:
-        print(f'Dwonloading source code...', end='')
+        headers: dict[str, str] = {}
+        if self.config.api_token:
+            headers['Authorization'] = f'Bearer {self.config.api_token}'
 
-        async with ClientSession(
-            str(self.config.api_host), headers={'Authorization': f'Bearer {self.config.api_token}'}
-        ) as session:
+        async with ClientSession(str(self.config.api_host), headers=headers) as session:
             async with session.get(
                 f'/api/v4/projects/{self.config.project_id}/repository/archive.tar.gz'
             ) as request:
@@ -50,12 +50,10 @@ class GitLabGitProcessor(
                         el.name = el.name.replace(root, str(self.TEMP_PATH))
                         tar.extract(el, filter='data')
 
-        print(f'done')
         return self.TEMP_PATH
 
     async def process_blob(self, blob: Path, depth: int) -> BlobData:
         blob_path = self.strip_temp(blob)
-        print(f'{"|" * (depth + 1)}- blob: {blob_path}')
 
         with open(blob, 'r') as file:
             return BlobData(
@@ -66,7 +64,6 @@ class GitLabGitProcessor(
 
     async def process_tree(self, tree: Path, depth: int) -> TreeData:
         tree_path = self.strip_temp(tree)
-        print(f'{"|" * (depth + 1)} tree: {tree_path}')
 
         blob_datas: list[BlobData] = []
         tree_datas: list[TreeData] = []
